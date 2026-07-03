@@ -1,23 +1,38 @@
+import "dotenv/config";
 import redisClient from "../config/redis.js";
-const WINDOW_SIZE = 60 * 1000;
-const MAX_REQUESTS = 5;
-
+import { WINDOW_SIZE, MAX_REQUESTS } from "../config/env.js";
 const rateLimiterMiddleware = async (req, res, next) => {
-  const clientIP = req.ip;
-  const redisKey = `rate_limit:${clientIP}`;
-
+  const apiKey = req.header("x-api-key");
+  if (!apiKey) {
+    return res.status(401).json({
+      success: false,
+      message: "API key is required.",
+    });
+  }
+  const redisKey = `rate_limit:${apiKey}`;
   const wasKeyCreated = await redisClient.set(redisKey, 1, {
     EX: WINDOW_SIZE,
     NX: true,
   });
 
+  let currentCount;
+
   if (wasKeyCreated === "OK") {
-    return next();
+    currentCount = 1;
+  } else {
+    currentCount = await redisClient.incr(redisKey);
   }
 
-  const updatedCount = await redisClient.incr(redisKey);
+  const ttl = await redisClient.ttl(redisKey);
+  const remainingRequests = Math.max(0, MAX_REQUESTS - currentCount);
 
-  if (updatedCount > MAX_REQUESTS) {
+  res.setHeader("X-RateLimit-Limit", MAX_REQUESTS);
+
+  res.setHeader("X-RateLimit-Remaining", remainingRequests);
+
+  if (currentCount > MAX_REQUESTS) {
+    res.setHeader("Retry-After", ttl);
+
     return res.status(429).json({
       success: false,
       message: "Rate limit exceeded. Please try again later.",
@@ -26,7 +41,43 @@ const rateLimiterMiddleware = async (req, res, next) => {
 
   return next();
 
-  // without redis, using in-memory node.js
+  //  USing IP address method --->
+
+  // const clientIP = req.ip;
+  // const redisKey = `rate_limit:${clientIP}`;
+
+  // const wasKeyCreated = await redisClient.set(redisKey, 1, {
+  //   EX: WINDOW_SIZE,
+  //   NX: true,
+  // });
+
+  // let currentCount;
+
+  // if (wasKeyCreated === "OK") {
+  //   currentCount = 1;
+  // } else {
+  //   currentCount = await redisClient.incr(redisKey);
+  // }
+
+  // const ttl = await redisClient.ttl(redisKey);
+  // const remainingRequests = Math.max(0, MAX_REQUESTS - currentCount);
+
+  // res.setHeader("X-RateLimit-Limit", MAX_REQUESTS);
+
+  // res.setHeader("X-RateLimit-Remaining", remainingRequests);
+
+  // if (currentCount > MAX_REQUESTS) {
+  //   res.setHeader("Retry-After", ttl);
+
+  //   return res.status(429).json({
+  //     success: false,
+  //     message: "Rate limit exceeded. Please try again later.",
+  //   });
+  // }
+
+  // return next();
+
+  // without redis, using in-memory node.js --->
 
   // const clientData = requestStore.get(clientIP);
   // if (!clientData) {

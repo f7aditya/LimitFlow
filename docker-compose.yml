@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    depends_on:
+      - redis
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      WINDOW_LIMIT_SIZE: 60
+      WINDOW_MAX_REQUESTS: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

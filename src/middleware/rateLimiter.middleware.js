@@ -1,15 +1,10 @@
 import "dotenv/config";
 import redisClient from "../config/redis.js";
 import { WINDOW_SIZE, MAX_REQUESTS } from "../config/env.js";
+import metrics from "../config/metrics.js";
 const rateLimiterMiddleware = async (req, res, next) => {
-  const apiKey = req.header("x-api-key");
-  if (!apiKey) {
-    return res.status(401).json({
-      success: false,
-      message: "API key is required.",
-    });
-  }
-  const redisKey = `rate_limit:${apiKey}`;
+  metrics.totalRequests++;
+  const redisKey = `rate_limit:${req.apiKey}`;
   const wasKeyCreated = await redisClient.set(redisKey, 1, {
     EX: WINDOW_SIZE,
     NX: true,
@@ -32,12 +27,15 @@ const rateLimiterMiddleware = async (req, res, next) => {
 
   if (currentCount > MAX_REQUESTS) {
     res.setHeader("Retry-After", ttl);
+    metrics.blockedRequests++;
 
     return res.status(429).json({
       success: false,
       message: "Rate limit exceeded. Please try again later.",
     });
   }
+
+  metrics.allowedRequests++;
 
   return next();
 

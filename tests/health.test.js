@@ -1,17 +1,5 @@
 import request from "supertest";
 import app from "../src/app.js";
-import { initializeApp } from "../src/bootstrap.js";
-import redisClient from "../src/config/redis.js";
-
-beforeAll(async () => {
-  await initializeApp();
-});
-
-afterAll(async () => {
-  if (redisClient.isOpen) {
-    await redisClient.quit();
-  }
-});
 
 describe("Health API", () => {
   test("should return 401 when API key is missing", async () => {
@@ -31,5 +19,17 @@ describe("Health API", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.success).toBe(true);
+  });
+
+  test("should return 401 for an invalid API key", async () => {
+    const response = await request(app)
+      .get("/api/v1/health")
+      .set("x-api-key", "invalid-user");
+
+    expect(response.statusCode).toBe(401);
+
+    expect(response.body.success).toBe(false);
+
+    expect(response.body.message).toBe("Invalid API key.");
   });
 });

@@ -1,12 +1,13 @@
 import dotenv from "dotenv";
 import app from "./src/app.js";
 import redisClient from "./src/config/redis.js";
+import { initializeApp } from "./src/bootstrap.js";
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    await redisClient.connect();
+    await initializeApp();
     console.log("Redis is connected");
 
     app.listen(PORT, () => {

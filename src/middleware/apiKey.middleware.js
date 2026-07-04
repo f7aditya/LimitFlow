@@ -3,8 +3,8 @@ const apiKeyMiddleware = (req, res, next) => {
   const apiKey = req.header("x-api-key");
   if (!apiKey) {
     return res.status(401).json({
-      success: true,
-      message: "API Key is Required",
+      success: false,
+      message: "API key is required.",
     });
   }
   if (!VALID_API_KEYS.has(apiKey)) {

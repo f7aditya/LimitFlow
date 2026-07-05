@@ -24,5 +24,6 @@ app.get("/api/v1", (req, res) => {
 });
 
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/metrics", metricsRouter);
 
 export default app;

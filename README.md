@@ -6,6 +6,18 @@ LimitFlow demonstrates how modern backend services implement API rate limiting, 
 
 ---
 
+## 🌐 Live Demo
+
+API
+
+https://limitflow.onrender.com
+
+Swagger
+
+https://limitflow.onrender.com/api-docs
+
+---
+
 # ✨ Features
 
 - 🚦 Redis Fixed Window Rate Limiting
@@ -141,7 +153,7 @@ npm run format
 After starting the server:
 
 ```
-http://localhost:3000/api-docs
+https://limitflow.onrender.com/api-docs
 ```
 
 ---
